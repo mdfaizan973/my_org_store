@@ -129,4 +129,16 @@ ProductsRouter.get("/:id", async (req, res) => {
   }
 });
 
+// get data of the saler {saler_id}
+
+ProductsRouter.get("/saler/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const salerData = await ProductSchemaModel.find({ saler_id: id });
+    res.status(200).json(salerData);
+  } catch (error) {
+    console.error("Internal Server Error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
 module.exports = ProductsRouter;
