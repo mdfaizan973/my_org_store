@@ -30,10 +30,10 @@ cartRouter.get("/:id", async (req, res) => {
 });
 
 cartRouter.post("/", async (req, res) => {
-  const { prodId } = req.body;
+  const { prodId, userId } = req.body;
   try {
-    // const isCartPresent = await CartSchemaModel.findOne({ prodId, userId });
-    const isCartPresent = await CartSchemaModel.findOne({ prodId });
+    const isCartPresent = await CartSchemaModel.findOne({ prodId, userId });
+    // const isCartPresent = await CartSchemaModel.findOne({ prodId });
     if (isCartPresent) {
       return res.status(201).json({ message: "Already present in the Cart!" });
     }
