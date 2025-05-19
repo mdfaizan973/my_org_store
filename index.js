@@ -11,6 +11,7 @@ const salerRouter = require("./src/routes/SalerRouter");
 const invoiceDownloadRouter = require("./src/routes/InvoiceDownloadRouter");
 const orderRouter = require("./src/routes/OrderRouter");
 const bugReportRouter = require("./src/routes/BugReportRouter");
+const notesRouter = require("./src/routes/NotestRouter");
 const app = express();
 //
 app.use(express.json());
@@ -38,6 +39,8 @@ app.use("/api/saler", salerRouter);
 app.use("/api/invoices", invoiceDownloadRouter);
 app.use("/api/orders", orderRouter);
 app.use("/api/bug-report", bugReportRouter);
+
+app.use("/api/notes", notesRouter);
 
 const PORT = 5000;
 
