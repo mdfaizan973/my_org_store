@@ -46,6 +46,17 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+router.get("/user/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = await Note.find({ user_id: id });
+    res.status(200).json(data);
+  } catch (error) {
+    console.error("Internal Server Error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
 // Delete a note by ID
 router.delete("/:id", async (req, res) => {
   try {
