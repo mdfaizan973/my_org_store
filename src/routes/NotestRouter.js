@@ -8,6 +8,7 @@ const NoteSchema = new mongoose.Schema({
   subject: { type: String, required: true },
   title: { type: String, required: true },
   answer: { type: String, required: true },
+  user_id: { type: String, required: false },
   color: { type: String, default: "#000000" },
 }, { timestamps: true });
 
