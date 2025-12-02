@@ -3,7 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const router = express.Router();
 
-// Mongoose model definition
+// Mongoose model definition-
 const NoteSchema = new mongoose.Schema({
   subject: { type: String, required: true },
   title: { type: String, required: true },
