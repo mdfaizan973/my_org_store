@@ -22,6 +22,17 @@ const NoteSchema = new mongoose.Schema({
     required: false, 
     default: [] 
   },
+  socialUrl: {
+      type: [
+        {
+          id: { type: String, required: true },
+          label: { type: String, required: true },
+          url: { type: String, required: true }
+        }
+      ],
+      required: false,
+      default: null
+    }
 }, { timestamps: true });
 
 const Note = mongoose.model("Note", NoteSchema);
