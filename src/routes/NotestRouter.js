@@ -10,6 +10,7 @@ const NoteSchema = new mongoose.Schema({
   answer: { type: String, required: true },
   user_id: { type: String, required: false },
   color: { type: String, default: "#000000" },
+  imageLink: { type: String, required: false, default: null },
 }, { timestamps: true });
 
 const Note = mongoose.model("Note", NoteSchema);
