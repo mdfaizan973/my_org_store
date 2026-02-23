@@ -35,6 +35,58 @@ const NoteSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
+const ticketSchema = new mongoose.Schema(
+  {
+    issueNumber: {
+      type: String,
+      required: true,
+      unique: true, // ISS-1023 should be unique
+      trim: true
+    },
+
+    reporterId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+
+    reportName: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    title: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    status: {
+      type : String,
+      enum: ['Completed', 'Pending'],
+      default: 'Pending'
+    },
+
+    description: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    type: {
+      type: String,
+      enum: ['Bug', 'Feature'],
+      required: true
+    }
+  },
+  {
+    timestamps: true // adds createdAt & updatedAt
+  }
+);
+
+const ticket = mongoose.model('Tickets', ticketSchema);
+
 const Note = mongoose.model("Note", NoteSchema);
 
 // Create a new note
@@ -101,5 +153,74 @@ router.put("/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// ==========================
+// TICKET ROUTES
+// ==========================
+
+// Create new ticket
+router.post("/tickets", async (req, res) => {
+  try {
+    const newTicket = new ticket(req.body);
+    const savedTicket = await newTicket.save();
+    res.status(201).json(savedTicket);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Get all tickets
+router.get("/tickets", async (req, res) => {
+  try {
+    const tickets = await ticket.find().populate("reporterId");
+    res.status(200).json(tickets);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get single ticket by ID
+router.get("/tickets/:id", async (req, res) => {
+  try {
+    const singleTicket = await ticket.findById(req.params.id).populate("reporterId");
+    if (!singleTicket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+    res.status(200).json(singleTicket);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete ticket by ID
+router.delete("/tickets/:id", async (req, res) => {
+  try {
+    const deletedTicket = await ticket.findByIdAndDelete(req.params.id);
+    if (!deletedTicket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+    res.status(200).json({ message: "Ticket deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update ticket by ID
+router.put("/tickets/:id", async (req, res) => {
+  try {
+    const updatedTicket = await ticket.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    if (!updatedTicket) {
+      return res.status(404).json({ message: "Ticket not found" });
+    }
+    res.status(200).json(updatedTicket);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 module.exports = router;
