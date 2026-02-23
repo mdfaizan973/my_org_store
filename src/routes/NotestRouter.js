@@ -153,7 +153,7 @@ router.put("/:id", async (req, res) => {
 // TICKET ROUTES
 // ==========================
 
-// Create new ticket
+// Create a new ticket
 router.post("/tickets", async (req, res) => {
   try {
     const newTicket = new ticket(req.body);
@@ -167,21 +167,31 @@ router.post("/tickets", async (req, res) => {
 // Get all tickets
 router.get("/tickets", async (req, res) => {
   try {
-    const tickets = await ticket.find().populate("reporterId");
+    const tickets = await ticket.find();
     res.status(200).json(tickets);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Get single ticket by ID
+// Get ticket by ID
 router.get("/tickets/:id", async (req, res) => {
   try {
-    const singleTicket = await ticket.findById(req.params.id).populate("reporterId");
+    const singleTicket = await ticket.findById(req.params.id);
     if (!singleTicket) {
       return res.status(404).json({ message: "Ticket not found" });
     }
     res.status(200).json(singleTicket);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get tickets by reporterId
+router.get("/tickets/user/:id", async (req, res) => {
+  try {
+    const tickets = await ticket.find({ reporterId: req.params.id });
+    res.status(200).json(tickets);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
