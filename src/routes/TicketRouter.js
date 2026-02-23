@@ -74,7 +74,8 @@ router.get("/", async (req, res) => {
 // Get Ticket By ID
 router.get("/:id", async (req, res) => {
   try {
-    const ticket = await Ticket.findById(req.params.id);
+    // const ticket = await Ticket.findById(req.params.id);
+    const tickets = await Ticket.find({ reporterId: req.params.id });
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });
     }
