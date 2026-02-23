@@ -44,12 +44,7 @@ const ticketSchema = new mongoose.Schema(
       trim: true
     },
 
-    reporterId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
-
+    reporterId:  { type: String, required: true },
     reportName: {
       type: String,
       required: true,
