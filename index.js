@@ -13,6 +13,7 @@ const orderRouter = require("./src/routes/OrderRouter");
 const bugReportRouter = require("./src/routes/BugReportRouter");
 const notesRouter = require("./src/routes/NotestRouter");
 const ticketRouter = require("./src/routes/TicketRouter");
+const communityFeedRouter = require("./src/routes/communityFeedRouter");
 
 const app = express();
 //
@@ -44,6 +45,7 @@ app.use("/api/bug-report", bugReportRouter);
 
 app.use("/api/notes", notesRouter);
 app.use("/api/tickets", ticketRouter);
+app.use("/api/feed", communityFeedRouter);
 
 const PORT = 5000;
 
