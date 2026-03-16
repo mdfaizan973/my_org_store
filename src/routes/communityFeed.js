@@ -49,26 +49,25 @@ router.post("/", async (req,res)=>{
 
 
 /* Get paginated feed posts sorted by newest */
-router.get("/", async (req,res)=>{
-  try{
+router.get("/", async (req, res) => {
+  try {
 
-    const { page = 1, limit = 10 } = req.query;
+    const { limit = 10 } = req.query;
 
-    const posts = await Post.find()
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
+    const posts = await Post.aggregate([
+      { $sample: { size: Number(limit) } }
+    ]);
 
     const result = [];
 
-    for(const post of posts){
+    for (const post of posts) {
 
       const commentCount = await Comment.countDocuments({
         postId: post._id.toString()
       });
 
       result.push({
-        ...post.toObject(),
+        ...post,
         likeCount: post.likes.length,
         dislikeCount: post.dislikes.length,
         commentCount
@@ -78,7 +77,7 @@ router.get("/", async (req,res)=>{
 
     res.status(200).json(result);
 
-  }catch(err){
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
