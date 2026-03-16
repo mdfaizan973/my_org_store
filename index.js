@@ -13,7 +13,7 @@ const orderRouter = require("./src/routes/OrderRouter");
 const bugReportRouter = require("./src/routes/BugReportRouter");
 const notesRouter = require("./src/routes/NotestRouter");
 const ticketRouter = require("./src/routes/TicketRouter");
-const communityFeedRouter = require("./src/routes/communityFeedRouter");
+const communityFeedRouter = require("./src/routes/communityFeed");
 
 const app = express();
 //
