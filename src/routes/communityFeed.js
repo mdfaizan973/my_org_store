@@ -1,339 +1,220 @@
-/*
-======================================================
-COMMUNITY FEED BACKEND
-Node.js + Express + MongoDB (Mongoose)
+const express = require("express");
+const mongoose = require("mongoose");
 
-Features
-- Create Post
-- Feed List
-- Like / Dislike
-- Comments
-- Engagement counts
-
-Relations stored using STRING ids
-No authentication logic included
-======================================================
-*/
-
-const express = require("express")
-const mongoose = require("mongoose")
-const cors = require("cors")
-
-const app = express()
-
-app.use(express.json())
-app.use(cors())
-
-/*
-======================================================
-DATABASE CONNECTION
-======================================================
-*/
-
-/*
-======================================================
-POST SCHEMA
-======================================================
-Stores user posts in the feed
-*/
+const router = express.Router();
 
 const PostSchema = new mongoose.Schema({
+  authorId: { type: String },
+  authorName: { type: String },
+  authorAvatar: { type: String },
+  content: { type: String, required: true },
+  imageUrl: { type: String, default: null },
+  likes: { type: [String], default: [] },
+  dislikes: { type: [String], default: [] }
+}, { timestamps: true });
 
-  authorId: String,
-
-  authorName: String,
-
-  authorAvatar: String,
-
-  content: {
-    type: String,
-    required: true
-  },
-
-  imageUrl: String,
-
-  likes: [String],
-
-  dislikes: [String],
-
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-
-})
-
-const Post = mongoose.model("Post", PostSchema)
-
-
-/*
-======================================================
-COMMENT SCHEMA
-======================================================
-Stores comments for each post
-*/
+const Post = mongoose.model("CommunityPost", PostSchema);
 
 const CommentSchema = new mongoose.Schema({
+  postId: { type: String },
+  authorId: { type: String },
+  authorName: { type: String },
+  content: { type: String, required: true }
+}, { timestamps: true });
 
-  postId: String,
-
-  authorId: String,
-
-  authorName: String,
-
-  content: {
-    type: String,
-    required: true
-  },
-
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-
-})
-
-const Comment = mongoose.model("Comment", CommentSchema)
+const Comment = mongoose.model("CommunityComment", CommentSchema);
 
 
-
-/*
-======================================================
-CREATE POST
-POST /api/feed
-======================================================
-*/
-
-app.post("/", async (req,res)=>{
-
+/* Create new community post with optional image */
+router.post("/", async (req,res)=>{
   try{
+    const { authorId, authorName, authorAvatar, content, imageUrl } = req.body;
 
-    const {authorId,authorName,authorAvatar,content,imageUrl} = req.body
-
-    const post = await Post.create({
+    const post = new Post({
       authorId,
       authorName,
       authorAvatar,
       content,
       imageUrl
-    })
+    });
 
-    res.json(post)
+    const savedPost = await post.save();
+
+    res.status(201).json(savedPost);
 
   }catch(err){
-
-    res.status(500).json({error:err.message})
-
+    res.status(400).json({ error: err.message });
   }
-
-})
-
+});
 
 
-/*
-======================================================
-GET FEED POSTS
-GET /api/feed?page=&limit=
-======================================================
-*/
-
-app.get("/", async (req,res)=>{
-
+/* Get paginated feed posts sorted by newest */
+router.get("/", async (req,res)=>{
   try{
 
-    const {page=1,limit=10} = req.query
+    const { page = 1, limit = 10 } = req.query;
 
     const posts = await Post.find()
-      .sort({createdAt:-1})
-      .skip((page-1)*limit)
-      .limit(Number(limit))
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
 
-    const result = []
+    const result = [];
 
     for(const post of posts){
 
       const commentCount = await Comment.countDocuments({
-        postId:post._id.toString()
-      })
+        postId: post._id.toString()
+      });
 
       result.push({
-
         ...post.toObject(),
-
         likeCount: post.likes.length,
-
         dislikeCount: post.dislikes.length,
-
         commentCount
-
-      })
+      });
 
     }
 
-    res.json(result)
+    res.status(200).json(result);
 
   }catch(err){
-
-    res.status(500).json({error:err.message})
-
+    res.status(500).json({ error: err.message });
   }
-
-})
-
+});
 
 
-/*
-======================================================
-DELETE POST
-DELETE /api/feed/:id
-======================================================
-*/
+/* Delete post and remove all related comments */
+router.delete("/:id", async (req,res)=>{
+  try{
 
-app.delete("/:id", async (req,res)=>{
+    const deletedPost = await Post.findByIdAndDelete(req.params.id);
 
-  await Post.findByIdAndDelete(req.params.id)
+    if(!deletedPost)
+      return res.status(404).json({ message: "Post not found" });
 
-  await Comment.deleteMany({
-    postId:req.params.id
-  })
+    await Comment.deleteMany({ postId: req.params.id });
 
-  res.json({message:"Post deleted"})
+    res.status(200).json({ message: "Post deleted successfully" });
 
-})
-
-
-
-/*
-======================================================
-LIKE POST
-POST /api/feed/:id/like
-======================================================
-*/
-
-app.post("/:id/like", async (req,res)=>{
-
-  const {userId} = req.body
-
-  const post = await Post.findById(req.params.id)
-
-  if(!post.likes.includes(userId))
-  {
-    post.likes.push(userId)
-
-    post.dislikes = post.dislikes.filter(
-      id => id !== userId
-    )
+  }catch(err){
+    res.status(500).json({ error: err.message });
   }
-
-  await post.save()
-
-  res.json({
-
-    likeCount:post.likes.length,
-    dislikeCount:post.dislikes.length
-
-  })
-
-})
+});
 
 
+/* Like post and remove dislike if exists */
+router.post("/:id/like", async (req,res)=>{
+  try{
 
-/*
-======================================================
-DISLIKE POST
-POST /api/feed/:id/dislike
-======================================================
-*/
+    const { userId } = req.body;
 
-app.post("/:id/dislike", async (req,res)=>{
+    const post = await Post.findById(req.params.id);
 
-  const {userId} = req.body
+    if(!post)
+      return res.status(404).json({ message: "Post not found" });
 
-  const post = await Post.findById(req.params.id)
+    if(!post.likes.includes(userId)){
+      post.likes.push(userId);
+      post.dislikes = post.dislikes.filter(id => id !== userId);
+    }
 
-  if(!post.dislikes.includes(userId))
-  {
-    post.dislikes.push(userId)
+    await post.save();
 
-    post.likes = post.likes.filter(
-      id => id !== userId
-    )
+    res.status(200).json({
+      likeCount: post.likes.length,
+      dislikeCount: post.dislikes.length
+    });
+
+  }catch(err){
+    res.status(500).json({ error: err.message });
   }
-
-  await post.save()
-
-  res.json({
-
-    likeCount:post.likes.length,
-    dislikeCount:post.dislikes.length
-
-  })
-
-})
+});
 
 
+/* Dislike post and remove like if exists */
+router.post("/:id/dislike", async (req,res)=>{
+  try{
 
-/*
-======================================================
-GET COMMENTS
-GET /:postId/comments
-======================================================
-*/
+    const { userId } = req.body;
 
-app.get("/:postId/comments", async (req,res)=>{
+    const post = await Post.findById(req.params.id);
 
-  const comments = await Comment.find({
-    postId:req.params.postId
-  })
-  .sort({createdAt:1})
+    if(!post)
+      return res.status(404).json({ message: "Post not found" });
 
-  res.json(comments)
+    if(!post.dislikes.includes(userId)){
+      post.dislikes.push(userId);
+      post.likes = post.likes.filter(id => id !== userId);
+    }
 
-})
+    await post.save();
 
+    res.status(200).json({
+      likeCount: post.likes.length,
+      dislikeCount: post.dislikes.length
+    });
 
-
-/*
-======================================================
-CREATE COMMENT
-POST /api/feed/:postId/comments
-======================================================
-*/
-
-app.post("/:postId/comments", async (req,res)=>{
-
-  const {authorId,authorName,content} = req.body
-
-  const comment = await Comment.create({
-
-    postId:req.params.postId,
-
-    authorId,
-
-    authorName,
-
-    content
-
-  })
-
-  res.json(comment)
-
-})
+  }catch(err){
+    res.status(500).json({ error: err.message });
+  }
+});
 
 
+/* Get all comments for a specific post */
+router.get("/:postId/comments", async (req,res)=>{
+  try{
 
-/*
-======================================================
-DELETE COMMENT
-DELETE /api/feed/:postId/comments/:id
-======================================================
-*/
+    const comments = await Comment.find({
+      postId: req.params.postId
+    }).sort({ createdAt: 1 });
 
-app.delete("/:postId/comments/:id", async (req,res)=>{
+    res.status(200).json(comments);
 
-  await Comment.findByIdAndDelete(req.params.id)
+  }catch(err){
+    res.status(500).json({ error: err.message });
+  }
+});
 
-  res.json({message:"Comment deleted"})
 
-})
+/* Create new comment under specific post */
+router.post("/:postId/comments", async (req,res)=>{
+  try{
 
+    const { authorId, authorName, content } = req.body;
+
+    const comment = new Comment({
+      postId: req.params.postId,
+      authorId,
+      authorName,
+      content
+    });
+
+    const savedComment = await comment.save();
+
+    res.status(201).json(savedComment);
+
+  }catch(err){
+    res.status(400).json({ error: err.message });
+  }
+});
+
+
+/* Delete specific comment from a post */
+router.delete("/:postId/comments/:id", async (req,res)=>{
+  try{
+
+    const deletedComment = await Comment.findByIdAndDelete(req.params.id);
+
+    if(!deletedComment)
+      return res.status(404).json({ message: "Comment not found" });
+
+    res.status(200).json({ message: "Comment deleted successfully" });
+
+  }catch(err){
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+module.exports = router;
